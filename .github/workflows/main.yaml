@@ -12,16 +12,7 @@ jobs:
           node-version: 24
       - run: npm ci
       - run: npm run lint
-      - name: Verify URLs
-        run: |
-          for path in "/" "/about"; do
-            url="${{ steps.preview.outputs.base }}${path}"
-            code=$(curl -s -o /dev/null -w '%{http_code}' -L "$url")
-            echo "$code  $url"
-            [ "$code" = "200" ] || { echo "::error::$url returned $code"; exit 1; }
-          done
-
-  
+ 
 
   lighthouse:
     needs: build
@@ -48,6 +39,14 @@ jobs:
             sleep 15
           done
           echo "Preview never became available" && exit 1
+      - name: Verify URLs
+        run: |
+          for path in "/" "/about"; do
+            url="${{ steps.preview.outputs.base }}${path}"
+            code=$(curl -s -o /dev/null -w '%{http_code}' -L "$url")
+            echo "$code  $url"
+            [ "$code" = "200" ] || { echo "::error::$url returned $code"; exit 1; }
+          done
 
       - name: Run Lighthouse CI
         uses: treosh/lighthouse-ci-action@v12
