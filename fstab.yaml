@@ -1,0 +1,11 @@
+# fstab.yaml (repo root)
+mountpoints:
+  /: https://drive.google.com/drive/folders/1sao8pIzyG06DtCaGArCK9DcHfUBDQQlj?usp=drive_link
+
+  # Optional: a separate Drive folder for a section (longest prefix wins)
+  /blog: https://drive.google.com/drive/folders/1ZyXwVuTsRqPoNmLkJiHgFeDcBa987654
+
+# Optional: map a URL folder to a default "template" document,
+# used for pages that don't exist as their own document
+folders:
+  /products/: /products/default
