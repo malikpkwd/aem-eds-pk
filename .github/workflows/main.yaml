@@ -5,10 +5,46 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v7
-    - name: Use Node.js 20
-      uses: actions/setup-node@v6
-      with:
-        node-version: 24
-    - run: npm ci
-    - run: npm run lint
+      - uses: actions/checkout@v7
+      - name: Use Node.js 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+      - run: npm ci
+      - run: npm run lint
+
+  lighthouse:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Compute preview URL
+        id: preview
+        run: |
+          slug() { echo "$1" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g'; }
+          BRANCH=$(slug "$GITHUB_REF_NAME")
+          REPO=$(slug "${GITHUB_REPOSITORY#*/}")
+          OWNER=$(slug "$GITHUB_REPOSITORY_OWNER")
+          echo "base=https://${BRANCH}--${REPO}--${OWNER}.aem.page" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for AEM Code Sync
+        run: |
+          sleep 45   # give Code Sync time to publish this push
+          for i in $(seq 1 20); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "${{ steps.preview.outputs.base }}/")
+            [ "$code" = "200" ] && exit 0
+            echo "Preview returned $code, retrying ($i/20)..."
+            sleep 15
+          done
+          echo "Preview never became available" && exit 1
+
+      - name: Run Lighthouse CI
+        uses: treosh/lighthouse-ci-action@v12
+        with:
+          urls: |
+            ${{ steps.preview.outputs.base }}/
+            ${{ steps.preview.outputs.base }}/about
+          configPath: ./lighthouserc.json
+          uploadArtifacts: true
+          temporaryPublicStorage: true
